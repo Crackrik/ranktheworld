@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RankEverything - Rank Anything in Existence</title>
+    <meta name="description" content="Rank movies, music, books, games, and everything else. Discover what the world thinks through collaborative ranking.">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Core Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <link href="https://unpkg.com/splitting@1.0.6/dist/splitting.css" rel="stylesheet">
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.min.js"></script>
+    
+    <style>
+        :root {
+            --deep-slate: #1e293b;
+            --warm-white: #fefefe;
+            --accent-orange: #f97316;
+            --soft-gray: #64748b;
+            --ranking-blue: #3b82f6;
+            --success-green: #10b981;
+            --warning-amber: #f59e0b;
+            --neutral-purple: #8b5cf6;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fefefe 0%, #f8fafc 100%);
+            min-height: 100vh;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, 
+                rgba(249, 115, 22, 0.05) 0%, 
+                rgba(59, 130, 246, 0.05) 50%, 
+                rgba(16, 185, 129, 0.05) 100%);
+            animation: gradientShift 20s ease-in-out infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .category-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .ranking-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .ranking-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ranking-card.selected {
+            border-color: var(--accent-orange);
+            background: rgba(249, 115, 22, 0.05);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-orange) 0%, var(--ranking-blue) 100%);
+            height: 6px;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .vs-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .search-glow {
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .search-glow:focus {
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+        }
+        
+        .ranking-animation {
+            animation: rankingSlide 0.5s ease-out;
+        }
+        
+        @keyframes rankingSlide {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, var(--ranking-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #ea580c 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--accent-orange);
+            color: var(--accent-orange);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--accent-orange);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .stats-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-white to-gray-50">
+    <!-- Navigation -->
+    <nav class="nav-blur fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">R</span>
+                </div>
+                <span class="text-2xl font-bold text-slate-800">RankEverything</span>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#browse" class="text-slate-600 hover:text-orange-500 transition-colors font-medium">Browse</a>
+                <a href="#create" class="text-slate-600 hover:text-orange-500 transition-colors font-medium">Create</a>
+                <a href="#community" class="text-slate-600 hover:text-orange-500 transition-colors font-medium">Community</a>
+                <a href="#profile" class="text-slate-600 hover:text-orange-500 transition-colors font-medium">Profile</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="btn-secondary px-4 py-2 rounded-lg font-medium">Sign In</button>
+                <button class="btn-primary px-4 py-2 rounded-lg font-medium text-white">Get Started</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient pt-24 pb-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h1 class="text-6xl md:text-7xl font-bold text-slate-800 mb-6">
+                    <span id="typed-text" class="text-gradient"></span>
+                </h1>
+                <p class="text-xl md:text-2xl text-slate-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+                    From movies to music, books to games, discover what the world thinks through collaborative ranking. 
+                    Create, compare, and explore rankings on anything in existence.
+                </p>
+                
+                <!-- Search Bar -->
+                <div class="max-w-2xl mx-auto mb-12">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="global-search"
+                            placeholder="Start ranking movies, music, books, games..."
+                            class="w-full px-6 py-4 text-lg rounded-2xl border-2 border-gray-200 focus:border-orange-500 focus:outline-none search-glow bg-white/80 backdrop-blur-sm"
+                        >
+                        <button class="absolute right-3 top-1/2 transform -translate-y-1/2 btn-primary px-6 py-2 rounded-xl text-white">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                    <div class="stats-card p-6 rounded-2xl text-center">
+                        <div class="text-3xl font-bold text-orange-500 mb-2" id="total-rankings">0</div>
+                        <div class="text-sm text-slate-600">Total Rankings</div>
+                    </div>
+                    <div class="stats-card p-6 rounded-2xl text-center">
+                        <div class="text-3xl font-bold text-blue-500 mb-2" id="active-users">0</div>
+                        <div class="text-sm text-slate-600">Active Users</div>
+                    </div>
+                    <div class="stats-card p-6 rounded-2xl text-center">
+                        <div class="text-3xl font-bold text-green-500 mb-2" id="categories">0</div>
+                        <div class="text-sm text-slate-600">Categories</div>
+                    </div>
+                    <div class="stats-card p-6 rounded-2xl text-center">
+                        <div class="text-3xl font-bold text-purple-500 mb-2" id="items-ranked">0</div>
+                        <div class="text-sm text-slate-600">Items Ranked</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Categories -->
+    <section class="py-16 px-6" id="browse">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-slate-800 mb-4">Popular Categories</h2>
+                <p class="text-xl text-slate-600 max-w-2xl mx-auto">
+                    Explore rankings in categories you love or discover new ones to rank
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6" id="categories-grid">
+                <!-- Categories will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Ranking Interface (Hidden by default) -->
+    <section class="py-16 px-6 hidden" id="ranking-section">
+        <div class="max-w-6xl mx-auto">
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-slate-600">Progress</span>
+                    <span class="text-sm font-medium text-slate-600" id="progress-text">0 of 0</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="progress-bar h-2 rounded-full" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Ranking Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2" id="category-title">Rank Movies</h2>
+                <p class="text-lg text-slate-600" id="category-description">Help create the definitive ranking</p>
+            </div>
+            
+            <!-- Head-to-Head Comparison -->
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <!-- Item A -->
+                <div class="ranking-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" id="item-a">
+                    <div class="aspect-video bg-gray-200 rounded-xl mb-4 overflow-hidden">
+                        <img id="item-a-image" src="" alt="" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2" id="item-a-title">Loading...</h3>
+                    <p class="text-slate-600 mb-4" id="item-a-description">Loading...</p>
+                    <button class="btn-primary w-full py-3 rounded-xl font-medium" onclick="selectItem('a')">
+                        Choose This One
+                    </button>
+                </div>
+                
+                <!-- VS -->
+                <div class="flex items-center justify-center">
+                    <div class="vs-animation text-6xl font-bold text-gradient">VS</div>
+                </div>
+                
+                <!-- Item B -->
+                <div class="ranking-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" id="item-b">
+                    <div class="aspect-video bg-gray-200 rounded-xl mb-4 overflow-hidden">
+                        <img id="item-b-image" src="" alt="" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2" id="item-b-title">Loading...</h3>
+                    <p class="text-slate-600 mb-4" id="item-b-description">Loading...</p>
+                    <button class="btn-primary w-full py-3 rounded-xl font-medium" onclick="selectItem('b')">
+                        Choose This One
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="btn-secondary px-8 py-3 rounded-xl font-medium" onclick="skipPair()">
+                    Skip This Pair
+                </button>
+                <button class="btn-secondary px-8 py-3 rounded-xl font-medium" onclick="dontKnow()">
+                    I Don't Know
+                </button>
+                <button class="btn-secondary px-8 py-3 rounded-xl font-medium" onclick="viewResults()">
+                    View Results
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Visualization (Hidden by default) -->
+    <section class="py-16 px-6 hidden" id="results-section">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-slate-800 mb-4" id="results-title">Top Rankings</h2>
+                <p class="text-xl text-slate-600">Based on community votes and sophisticated ranking algorithms</p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Rankings List -->
+                <div class="chart-container p-6">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6">Top 20</h3>
+                    <div id="rankings-list" class="space-y-4">
+                        <!-- Rankings will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Interactive Chart -->
+                <div class="chart-container p-6">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6">Ranking Distribution</h3>
+                    <div id="ranking-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="grid md:grid-cols-4 gap-6 mt-12">
+                <div class="stats-card p-6 rounded-2xl text-center">
+                    <div class="text-2xl font-bold text-blue-500 mb-2" id="total-votes">0</div>
+                    <div class="text-sm text-slate-600">Total Votes</div>
+                </div>
+                <div class="stats-card p-6 rounded-2xl text-center">
+                    <div class="text-2xl font-bold text-green-500 mb-2" id="participants">0</div>
+                    <div class="text-sm text-slate-600">Participants</div>
+                </div>
+                <div class="stats-card p-6 rounded-2xl text-center">
+                    <div class="text-2xl font-bold text-purple-500 mb-2" id="confidence">0%</div>
+                    <div class="text-sm text-slate-600">Confidence</div>
+                </div>
+                <div class="stats-card p-6 rounded-2xl text-center">
+                    <div class="text-2xl font-bold text-orange-500 mb-2" id="ranking-method">Elo</div>
+                    <div class="text-sm text-slate-600">Method</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section class="py-16 px-6 bg-gradient-to-br from-blue-50 to-orange-50" id="community">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-slate-800 mb-4">Join the Community</h2>
+                <p class="text-xl text-slate-600 max-w-2xl mx-auto">
+                    Connect with ranking enthusiasts, share your opinions, and discover new perspectives
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="stats-card p-8 rounded-2xl text-center">
+                    <div class="text-4xl mb-4">🏆</div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Ranking Challenges</h3>
+                    <p class="text-slate-600 mb-4">Participate in daily and weekly ranking challenges</p>
+                    <button class="btn-primary px-6 py-2 rounded-lg text-white">Join Challenge</button>
+                </div>
+                
+                <div class="stats-card p-8 rounded-2xl text-center">
+                    <div class="text-4xl mb-4">👥</div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Groups & Teams</h3>
+                    <p class="text-slate-600 mb-4">Create or join ranking groups with friends</p>
+                    <button class="btn-primary px-6 py-2 rounded-lg text-white">Find Groups</button>
+                </div>
+                
+                <div class="stats-card p-8 rounded-2xl text-center">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Global Rankings</h3>
+                    <p class="text-slate-600 mb-4">See how your rankings compare to the world</p>
+                    <button class="btn-primary px-6 py-2 rounded-lg text-white">Explore Global</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-white py-12 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-blue-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold">R</span>
+                        </div>
+                        <span class="text-xl font-bold">RankEverything</span>
+                    </div>
+                    <p class="text-slate-400 text-sm">
+                        The universal platform for ranking anything in existence. 
+                        Create, compare, and discover rankings on everything you care about.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Features</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Universal Ranking</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Head-to-Head Comparisons</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community Rankings</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Advanced Analytics</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Community</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Ranking Challenges</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Discussion Forums</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">User Groups</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Leaderboards</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-700 pt-8 text-center">
+                <p class="text-slate-400 text-sm">
+                    © 2025 RankEverything. All rights reserved. Built with passion for ranking everything in existence.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
